@@ -31,6 +31,17 @@ This project includes `render.yaml`.
    - `SMTP_SECURE`
    - `SMTP_USER`
    - `SMTP_PASS`
+   - `SMTP_FROM`
+   - `SMTP_FROM_NAME=FindLabs AI`
+
+For Microsoft 365 / Outlook mailboxes, typical SMTP values are:
+
+- `SMTP_HOST=smtp.office365.com`
+- `SMTP_PORT=587`
+- `SMTP_SECURE=false`
+- `SMTP_USER=your mailbox email`
+- `SMTP_PASS=your mailbox password or app password`
+- `SMTP_FROM=your mailbox email`
 
 ## DNS
 

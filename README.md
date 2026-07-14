@@ -19,6 +19,8 @@ SMTP_PORT=
 SMTP_SECURE=
 SMTP_USER=
 SMTP_PASS=
+SMTP_FROM=
+SMTP_FROM_NAME=FindLabs AI
 NOTIFICATION_EMAIL=founder@findlabs.org
 ```
 
@@ -67,6 +69,8 @@ When SMTP variables are configured, the server sends:
 
 - A full AI Employee Blueprint to `NOTIFICATION_EMAIL` or `founder@findlabs.org`
 - A confirmation email to the client
+
+`NOTIFICATION_EMAIL` can contain one address or multiple comma-separated addresses. Admin lead emails include contact name, email, phone, company details, all selected form answers, and the "Other" text details. The admin email uses the prospect as `Reply-To`, so replying from the inbox goes directly to the person who submitted the form.
 
 When SMTP is not configured, the request still saves successfully, the server logs a warning, and the frontend shows that email notification is pending.
 

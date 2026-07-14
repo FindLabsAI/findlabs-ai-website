@@ -151,6 +151,14 @@ function isConfiguredSmtp() {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
+function emailList(value, fallback) {
+  const raw = value || fallback || "";
+  return raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => validator.isEmail(item));
+}
+
 function normalizeRequest(body) {
   return {
     companyName: cleanText(body.companyName, 160),
@@ -301,6 +309,69 @@ function formatBlueprint(record) {
   ].join("\n");
 }
 
+function formatLeadHtml(record) {
+  const r = record.request;
+  const showOther = (value, detail) => {
+    if (Array.isArray(value)) {
+      return value.map((item) => (item === "Other" && detail ? `Other: ${detail}` : item)).join(", ");
+    }
+    return value === "Other" && detail ? `Other: ${detail}` : value;
+  };
+  const row = (label, value) => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e7eaf0;color:#5f6675;width:180px;">${label}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e7eaf0;color:#0f172a;font-weight:600;">${value || "Not provided"}</td>
+    </tr>`;
+
+  return `<!doctype html>
+  <html>
+    <body style="margin:0;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+      <div style="max-width:760px;margin:0 auto;padding:28px;">
+        <div style="background:#ffffff;border:1px solid #e7eaf0;border-radius:12px;overflow:hidden;">
+          <div style="padding:24px 28px;background:#07111f;color:#ffffff;">
+            <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#8fbfff;">New AI Employee Request</div>
+            <h1 style="margin:8px 0 0;font-size:24px;line-height:1.25;">${r.companyName}</h1>
+            <p style="margin:10px 0 0;color:#cbd5e1;">Request ID: ${record.id}<br>Submitted: ${record.submittedAt}</p>
+          </div>
+          <div style="padding:24px 28px;">
+            <h2 style="font-size:18px;margin:0 0 12px;">Contact Details</h2>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+              ${row("Contact name", r.contactName)}
+              ${row("Email", `<a href="mailto:${r.contactEmail}" style="color:#2f8cff;">${r.contactEmail}</a>`)}
+              ${row("Phone", r.phone)}
+              ${row("Website", r.website)}
+              ${row("Country", r.country)}
+            </table>
+
+            <h2 style="font-size:18px;margin:0 0 12px;">Company</h2>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+              ${row("Industry", r.industry)}
+              ${row("Company size", r.companySize)}
+              ${row("Department", showOther(r.department, r.departmentOther))}
+              ${row("Timeline", r.timeline)}
+              ${row("Budget", r.budget)}
+              ${row("Priority", r.urgency)}
+              ${row("Expected users", r.expectedUsers)}
+            </table>
+
+            <h2 style="font-size:18px;margin:0 0 12px;">AI Employee Blueprint</h2>
+            <table style="width:100%;border-collapse:collapse;">
+              ${row("Primary responsibility", showOther(r.businessProblem, r.businessProblemOther))}
+              ${row("Workflow", r.workflowDescription)}
+              ${row("Systems to connect", showOther(r.systems, r.systemsOther))}
+              ${row("Knowledge sources", r.knowledgeSources.join(", "))}
+              ${row("Actions", r.actions.join(", "))}
+              ${row("Deployment", r.deploymentPreference)}
+              ${row("Security", showOther(r.securityRequirements, r.securityRequirementsOther))}
+              ${row("Security notes", r.securityNotes)}
+            </table>
+          </div>
+        </div>
+      </div>
+    </body>
+  </html>`;
+}
+
 async function sendEmails(record) {
   if (!isConfiguredSmtp()) {
     console.warn("SMTP is not configured. Request saved; email notifications are pending.");
@@ -317,19 +388,29 @@ async function sendEmails(record) {
     }
   });
 
-  const notificationEmail = process.env.NOTIFICATION_EMAIL || "founder@findlabs.org";
+  const notificationEmails = emailList(process.env.NOTIFICATION_EMAIL, "founder@findlabs.org");
+  if (!notificationEmails.length) {
+    console.warn("No valid NOTIFICATION_EMAIL configured. Request saved; admin email was not sent.");
+    return { configured: true, sent: false };
+  }
   const blueprint = formatBlueprint(record);
+  const fromName = process.env.SMTP_FROM_NAME || "FindLabs AI";
+  const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
+  const from = `${fromName} <${fromAddress}>`;
 
   await transporter.sendMail({
-    from: process.env.SMTP_USER,
-    to: notificationEmail,
+    from,
+    to: notificationEmails,
+    replyTo: `${record.request.contactName} <${record.request.contactEmail}>`,
     subject: `New AI Employee Request: ${record.request.companyName}`,
-    text: blueprint
+    text: blueprint,
+    html: formatLeadHtml(record)
   });
 
   await transporter.sendMail({
-    from: process.env.SMTP_USER,
+    from,
     to: record.request.contactEmail,
+    replyTo: notificationEmails[0],
     subject: "Your FindLabs AI Employee Request Has Been Received",
     text: [
       "Your AI Employee Request Has Been Received.",
