@@ -382,6 +382,13 @@ async function sendEmails(record) {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT),
     secure: String(process.env.SMTP_SECURE).toLowerCase() === "true",
+    requireTLS: String(process.env.SMTP_REQUIRE_TLS || "true").toLowerCase() !== "false",
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 10000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 15000),
+    tls: {
+      minVersion: "TLSv1.2"
+    },
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS

@@ -42,6 +42,7 @@ For Microsoft 365 / Outlook mailboxes, typical SMTP values are:
 - `SMTP_USER=your mailbox email`
 - `SMTP_PASS=your mailbox password or app password`
 - `SMTP_FROM=your mailbox email`
+- `SMTP_REQUIRE_TLS=true`
 
 ## DNS
 
