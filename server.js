@@ -15,6 +15,8 @@ const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : pat
 const REQUESTS_FILE = path.join(DATA_DIR, "employee-requests.json");
 const PUBLIC_DIR = path.join(__dirname, "public");
 
+app.set("trust proxy", 1);
+
 app.use(
   helmet({
     contentSecurityPolicy: {
