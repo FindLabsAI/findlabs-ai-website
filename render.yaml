@@ -13,8 +13,10 @@ services:
         value: 10000
       - key: DATA_DIR
         value: /var/data
-      - key: NOTIFICATION_EMAIL
-        value: founder@findlabs.org
+        - key: NOTIFICATION_EMAIL
+          value: founder@findlabs.org
+        - key: SMTP_FROM_NAME
+          value: FindLabs AI
     disk:
       name: employee-requests
       mountPath: /var/data
